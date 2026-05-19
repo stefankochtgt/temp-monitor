@@ -1,0 +1,13 @@
+{
+  "name": "Temp Monitor",
+  "short_name": "TempMon",
+  "description": "DHT11 live temperature, humidity and servo control",
+  "start_url": "/temp-monitor/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

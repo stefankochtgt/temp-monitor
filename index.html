@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Temp Monitor</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="apple-touch-icon" href="icon-192.png">
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -120,6 +123,8 @@
   <div class="footer">sensor updates every 15 s</div>
 
   <script>
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
+
     const CHANNEL     = "3388449";
     const TOPIC_LED   = "tgt/led/stefankochtgt/cmd";
     const TOPIC_SERVO = "tgt/servo/stefankochtgt/cmd";
