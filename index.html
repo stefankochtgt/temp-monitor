@@ -195,12 +195,19 @@
       ledBtn.classList.toggle("on", ledOn);
     });
 
-    document.getElementById("btn-l").addEventListener("click", () => {
-      client.publish(TOPIC_SERVO, "L");
-    });
-    document.getElementById("btn-r").addEventListener("click", () => {
-      client.publish(TOPIC_SERVO, "R");
-    });
+    function holdButton(id, cmd) {
+      const btn = document.getElementById(id);
+      let interval = null;
+      btn.addEventListener("pointerdown", () => {
+        client.publish(TOPIC_SERVO, cmd);
+        interval = setInterval(() => client.publish(TOPIC_SERVO, cmd), 120);
+      });
+      const stop = () => { clearInterval(interval); interval = null; };
+      btn.addEventListener("pointerup", stop);
+      btn.addEventListener("pointerleave", stop);
+    }
+    holdButton("btn-l", "L");
+    holdButton("btn-r", "R");
   </script>
 </body>
 </html>
