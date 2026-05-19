@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Temp Monitor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0a0a0a;
+      color: #ccc;
+      font-family: Consolas, monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 32px;
+    }
+    h1 { font-size: 14px; color: #444; letter-spacing: 3px; text-transform: uppercase; }
+    .cards {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .card {
+      background: #111;
+      border-radius: 12px;
+      padding: 36px 48px;
+      text-align: center;
+      min-width: 180px;
+    }
+    .label { font-size: 11px; color: #555; letter-spacing: 2px; margin-bottom: 12px; }
+    .value { font-size: 56px; font-weight: bold; }
+    .comfort { font-size: 12px; color: #444; margin-top: 8px; }
+    .footer { font-size: 11px; color: #333; }
+    #status { font-size: 11px; color: #555; }
+  </style>
+</head>
+<body>
+  <h1>DHT11 Live Monitor</h1>
+  <div class="cards">
+    <div class="card">
+      <div class="label">TEMPERATURE</div>
+      <div class="value" id="temp">--</div>
+      <div class="comfort" id="temp-comfort"></div>
+    </div>
+    <div class="card">
+      <div class="label">HUMIDITY</div>
+      <div class="value" id="humi">--</div>
+      <div class="comfort" id="humi-comfort"></div>
+    </div>
+  </div>
+  <div id="status">connecting...</div>
+  <div class="footer">updates every 15 s</div>
+
+  <script>
+    const CHANNEL = "3388449";
+
+    function tempColor(t) {
+      if (t < 18) return "#00aaff";
+      if (t < 26) return "#00ff88";
+      if (t < 35) return "#ffaa00";
+      return "#ff3300";
+    }
+    function humiColor(h) {
+      if (h < 30) return "#ffaa00";
+      if (h < 60) return "#00ff88";
+      return "#00aaff";
+    }
+    function tempLabel(t) {
+      if (t < 18) return "cold";
+      if (t < 26) return "comfortable";
+      if (t < 35) return "warm";
+      return "hot";
+    }
+    function humiLabel(h) {
+      if (h < 30) return "dry";
+      if (h < 60) return "comfortable";
+      return "humid";
+    }
+
+    async function update() {
+      try {
+        const r = await fetch(
+          `https://api.thingspeak.com/channels/${CHANNEL}/feeds/last.json`
+        );
+        const d = await r.json();
+        const t = parseFloat(d.field1);
+        const h = parseFloat(d.field2);
+
+        document.getElementById("temp").textContent = t.toFixed(1) + " °C";
+        document.getElementById("temp").style.color = tempColor(t);
+        document.getElementById("temp-comfort").textContent = tempLabel(t);
+
+        document.getElementById("humi").textContent = h.toFixed(1) + " %";
+        document.getElementById("humi").style.color = humiColor(h);
+        document.getElementById("humi-comfort").textContent = humiLabel(h);
+
+        const ts = new Date(d.created_at).toLocaleTimeString();
+        document.getElementById("status").textContent = "last reading: " + ts;
+      } catch (e) {
+        document.getElementById("status").textContent = "error fetching data";
+      }
+    }
+
+    update();
+    setInterval(update, 15000);
+  </script>
+</body>
+</html>
