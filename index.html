@@ -195,19 +195,22 @@
       ledBtn.classList.toggle("on", ledOn);
     });
 
-    function holdButton(id, cmd) {
-      const btn = document.getElementById(id);
-      let interval = null;
-      btn.addEventListener("pointerdown", () => {
-        client.publish(TOPIC_SERVO, cmd);
-        interval = setInterval(() => client.publish(TOPIC_SERVO, cmd), 120);
-      });
-      const stop = () => { clearInterval(interval); interval = null; };
-      btn.addEventListener("pointerup", stop);
-      btn.addEventListener("pointerleave", stop);
+    let servoInterval = null;
+
+    function startServo(cmd) {
+      if (servoInterval) return;
+      client.publish(TOPIC_SERVO, cmd);
+      servoInterval = setInterval(() => client.publish(TOPIC_SERVO, cmd), 150);
     }
-    holdButton("btn-l", "L");
-    holdButton("btn-r", "R");
+    function stopServo() {
+      clearInterval(servoInterval);
+      servoInterval = null;
+    }
+
+    document.getElementById("btn-l").addEventListener("pointerdown", (e) => { e.preventDefault(); startServo("L"); });
+    document.getElementById("btn-r").addEventListener("pointerdown", (e) => { e.preventDefault(); startServo("R"); });
+    document.addEventListener("pointerup", stopServo);
+    document.addEventListener("pointercancel", stopServo);
   </script>
 </body>
 </html>
