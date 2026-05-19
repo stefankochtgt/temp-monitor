@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Temp Monitor</title>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -16,6 +17,7 @@
       justify-content: center;
       min-height: 100vh;
       gap: 32px;
+      padding: 32px 16px;
     }
     h1 { font-size: 14px; color: #444; letter-spacing: 3px; text-transform: uppercase; }
     .cards {
@@ -34,12 +36,43 @@
     .label { font-size: 11px; color: #555; letter-spacing: 2px; margin-bottom: 12px; }
     .value { font-size: 56px; font-weight: bold; }
     .comfort { font-size: 12px; color: #444; margin-top: 8px; }
-    .footer { font-size: 11px; color: #333; }
     #status { font-size: 11px; color: #555; }
+
+    .control-card {
+      background: #111;
+      border-radius: 12px;
+      padding: 28px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .control-title { font-size: 11px; color: #555; letter-spacing: 2px; }
+
+    .led-btn {
+      background: #1e1e1e;
+      color: #555;
+      border: 2px solid #333;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      font-size: 32px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    .led-btn.on {
+      background: #1a2a1a;
+      border-color: #00ff88;
+      color: #00ff88;
+      box-shadow: 0 0 18px #00ff8866;
+    }
+    #mqtt-status { font-size: 10px; color: #333; }
+    .footer { font-size: 11px; color: #333; }
   </style>
 </head>
 <body>
   <h1>DHT11 Live Monitor</h1>
+
   <div class="cards">
     <div class="card">
       <div class="label">TEMPERATURE</div>
@@ -53,9 +86,17 @@
     </div>
   </div>
   <div id="status">connecting...</div>
-  <div class="footer">updates every 15 s</div>
+
+  <div class="control-card">
+    <div class="control-title">ESP32 LED</div>
+    <button class="led-btn" id="led-btn" title="Toggle LED">●</button>
+    <div id="mqtt-status">● disconnected</div>
+  </div>
+
+  <div class="footer">sensor updates every 15 s</div>
 
   <script>
+    /* ── temperature ── */
     const CHANNEL = "3388449";
 
     function tempColor(t) {
@@ -81,7 +122,7 @@
       return "humid";
     }
 
-    async function update() {
+    async function updateSensor() {
       try {
         const r = await fetch(
           `https://api.thingspeak.com/channels/${CHANNEL}/feeds/last.json`
@@ -89,24 +130,47 @@
         const d = await r.json();
         const t = parseFloat(d.field1);
         const h = parseFloat(d.field2);
-
         document.getElementById("temp").textContent = t.toFixed(1) + " °C";
         document.getElementById("temp").style.color = tempColor(t);
         document.getElementById("temp-comfort").textContent = tempLabel(t);
-
         document.getElementById("humi").textContent = h.toFixed(1) + " %";
         document.getElementById("humi").style.color = humiColor(h);
         document.getElementById("humi-comfort").textContent = humiLabel(h);
-
         const ts = new Date(d.created_at).toLocaleTimeString();
         document.getElementById("status").textContent = "last reading: " + ts;
       } catch (e) {
         document.getElementById("status").textContent = "error fetching data";
       }
     }
+    updateSensor();
+    setInterval(updateSensor, 15000);
 
-    update();
-    setInterval(update, 15000);
+    /* ── MQTT LED control ── */
+    const TOPIC = "tgt/led/stefankochtgt/cmd";
+    const mqttStatus = document.getElementById("mqtt-status");
+    const ledBtn = document.getElementById("led-btn");
+    let ledOn = false;
+
+    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+
+    client.on("connect", () => {
+      mqttStatus.textContent = "● connected";
+      mqttStatus.style.color = "#00ff88";
+    });
+    client.on("error", () => {
+      mqttStatus.textContent = "● error";
+      mqttStatus.style.color = "#ff3300";
+    });
+    client.on("offline", () => {
+      mqttStatus.textContent = "● disconnected";
+      mqttStatus.style.color = "#555";
+    });
+
+    ledBtn.addEventListener("click", () => {
+      client.publish(TOPIC, "T");
+      ledOn = !ledOn;
+      ledBtn.classList.toggle("on", ledOn);
+    });
   </script>
 </body>
 </html>
