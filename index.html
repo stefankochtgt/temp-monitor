@@ -66,6 +66,24 @@
       color: #00ff88;
       box-shadow: 0 0 18px #00ff8866;
     }
+    .servo-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .servo-btn {
+      background: #1e1e1e;
+      color: #888;
+      border: none;
+      border-radius: 8px;
+      width: 64px;
+      height: 52px;
+      font-size: 22px;
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+    }
+    .servo-btn:active { background: #00aaff; color: #000; }
+    .servo-label { font-size: 10px; color: #444; letter-spacing: 1px; }
     #mqtt-status { font-size: 10px; color: #333; }
     .footer { font-size: 11px; color: #333; }
   </style>
@@ -88,16 +106,23 @@
   <div id="status">connecting...</div>
 
   <div class="control-card">
-    <div class="control-title">ESP32 LED</div>
-    <button class="led-btn" id="led-btn" title="Toggle LED">●</button>
-    <div id="mqtt-status">● disconnected</div>
+    <div class="control-title">ESP32 CONTROL</div>
+    <div class="servo-label">LED</div>
+    <button class="led-btn" id="led-btn" title="Toggle LED">&#9679;</button>
+    <div class="servo-label">SERVO</div>
+    <div class="servo-row">
+      <button class="servo-btn" id="btn-l">&#9664;</button>
+      <button class="servo-btn" id="btn-r">&#9654;</button>
+    </div>
+    <div id="mqtt-status">disconnected</div>
   </div>
 
   <div class="footer">sensor updates every 15 s</div>
 
   <script>
-    /* ── temperature ── */
-    const CHANNEL = "3388449";
+    const CHANNEL     = "3388449";
+    const TOPIC_LED   = "tgt/led/stefankochtgt/cmd";
+    const TOPIC_SERVO = "tgt/servo/stefankochtgt/cmd";
 
     function tempColor(t) {
       if (t < 18) return "#00aaff";
@@ -145,31 +170,36 @@
     updateSensor();
     setInterval(updateSensor, 15000);
 
-    /* ── MQTT LED control ── */
-    const TOPIC = "tgt/led/stefankochtgt/cmd";
     const mqttStatus = document.getElementById("mqtt-status");
-    const ledBtn = document.getElementById("led-btn");
+    const ledBtn     = document.getElementById("led-btn");
     let ledOn = false;
 
     const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
 
     client.on("connect", () => {
-      mqttStatus.textContent = "● connected";
+      mqttStatus.textContent = "connected";
       mqttStatus.style.color = "#00ff88";
     });
     client.on("error", () => {
-      mqttStatus.textContent = "● error";
+      mqttStatus.textContent = "error";
       mqttStatus.style.color = "#ff3300";
     });
     client.on("offline", () => {
-      mqttStatus.textContent = "● disconnected";
+      mqttStatus.textContent = "disconnected";
       mqttStatus.style.color = "#555";
     });
 
     ledBtn.addEventListener("click", () => {
-      client.publish(TOPIC, "T");
+      client.publish(TOPIC_LED, "T");
       ledOn = !ledOn;
       ledBtn.classList.toggle("on", ledOn);
+    });
+
+    document.getElementById("btn-l").addEventListener("click", () => {
+      client.publish(TOPIC_SERVO, "L");
+    });
+    document.getElementById("btn-r").addEventListener("click", () => {
+      client.publish(TOPIC_SERVO, "R");
     });
   </script>
 </body>
